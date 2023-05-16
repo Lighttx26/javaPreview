@@ -1,2 +1,7 @@
 BKDN1,Dai hoc Bach Khoa,ProblemA,2,AC
-BKHN,Dai hoc Bach Khoa Ha Noi,ProblemB,3,AC
+UET,Dai hoc Cong nghe Ha Noi,ProblemB,4,WA
+BKDN2,Dai hoc Bach Khoa,ProblemA,5,WA
+HCMUS,Dai hoc Tu nhien,ProblemB,6,AC
+UET,Dai hoc cong nghe Ha Noi, ProblemB,7,AC
+BKDN2,Dai hoc Bach Khoa,ProblemA,8,WA
+HCMUS,Dai hoc Tu nhien,ProblemB,10,AC

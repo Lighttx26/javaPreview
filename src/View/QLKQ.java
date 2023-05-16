@@ -10,9 +10,10 @@ import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Flow;
 
 public class QLKQ extends JFrame {
@@ -166,7 +167,23 @@ public class QLKQ extends JFrame {
              @Override
              public void actionPerformed(ActionEvent e) {
                 try {
+                    DatabaseManager dm = new DatabaseManager();
+                    Connection connection = dm.getConnection();
+                    Statement statement = connection.createStatement();
 
+                    txtArea.setText("");
+
+                    String querysl = "select teamname, uniname,count(distinct(problemid)) as count, sum(time) as time from icpc where result = 'AC' group by teamname, uniname order by count desc";
+                    ResultSet result = statement.executeQuery(querysl);
+
+                    int rank = 1;
+                    while(result.next()) {
+                        String teamname = result.getString("teamname");
+                        String uniname = result.getString("uniname");
+                        int problemsolved = result.getInt("count");
+                        int time = result.getInt("time");
+                        txtArea.append(rank + "," + teamname + "," + uniname + "," + problemsolved + "," + time + "\n");
+                    }
                 }
 
                 catch (Exception ex) {
