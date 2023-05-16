@@ -11,10 +11,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Flow;
 
 public class QLKQ extends JFrame {
     public QLKQ() {
@@ -173,16 +169,27 @@ public class QLKQ extends JFrame {
 
                     txtArea.setText("");
 
-                    String querysl = "select teamname, uniname,count(distinct(problemid)) as count, sum(time) as time from icpc where result = 'AC' group by teamname, uniname order by count desc";
+                    String querysl = "select teamname, uniname,count(distinct(problemid)) as count, sum(min_time) as time from\n" +
+                            "(select teamname, uniname, problemid, min(time) as min_time from icpc where result = 'AC' group by teamname, uniname, problemid) as T \n" +
+                            "group by teamname,uniname order by count desc, time";
                     ResultSet result = statement.executeQuery(querysl);
 
-                    int rank = 1;
+                    int rank = 1, problemsolved = -1, time = -1;
                     while(result.next()) {
                         String teamname = result.getString("teamname");
                         String uniname = result.getString("uniname");
-                        int problemsolved = result.getInt("count");
-                        int time = result.getInt("time");
-                        txtArea.append(rank + "," + teamname + "," + uniname + "," + problemsolved + "," + time + "\n");
+
+                        if (result.getInt("count") == problemsolved && result.getInt("time") == time) {
+                            txtArea.append((rank-1) + "," + teamname + "," + uniname + "," + problemsolved + "," + time + "\n");
+                        }
+
+                        else {
+                            problemsolved = result.getInt("count");
+                            time = result.getInt("time");
+                            txtArea.append(rank + "," + teamname + "," + uniname + "," + problemsolved + "," + time + "\n");
+                        }
+
+                        rank += 1;
                     }
                 }
 
