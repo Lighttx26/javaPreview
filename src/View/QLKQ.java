@@ -11,6 +11,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class QLKQ extends JFrame {
     public QLKQ() {
@@ -37,53 +39,53 @@ public class QLKQ extends JFrame {
 
         // Import data field, [id] is short for [import data]
         field_id = new JPanel();
-        field_id.setPreferredSize(new Dimension(550, 60));
+        field_id.setPreferredSize(new Dimension(550, 30));
         field_id.setLayout(flowLayout);
 
         JLabel label_id = new JLabel("Import data");
-        label_id.setPreferredSize(new Dimension(160, 40));
+        label_id.setPreferredSize(new Dimension(160, 25));
         field_id.add(label_id);
 
         jtf_id = new JTextField();
-        jtf_id.setPreferredSize(new Dimension(160,40));
+        jtf_id.setPreferredSize(new Dimension(160,25));
         jtf_id.setHorizontalAlignment(SwingConstants.RIGHT);
         jtf_id.setBorder(new LineBorder(Color.BLACK, 1));
         field_id.add(jtf_id);
 
         btn_importfile = new JButton("Import file");
-        btn_importfile.setPreferredSize(new Dimension(160,40));
+        btn_importfile.setPreferredSize(new Dimension(160,25));
         field_id.add(btn_importfile);
 
 //        Keyword field, [kw] is short for [keyword]
         field_kw = new JPanel();
-        field_kw.setPreferredSize(new Dimension(550,60));
+        field_kw.setPreferredSize(new Dimension(550,30));
         field_kw.setLayout(flowLayout);
 
         JLabel label_kw = new JLabel("Keyword");
-        label_kw.setPreferredSize(new Dimension(160,40));
+        label_kw.setPreferredSize(new Dimension(160,25));
         field_kw.add(label_kw);
 
         jtf_kw = new JTextField();
-        jtf_kw.setPreferredSize(new Dimension(325, 40));
+        jtf_kw.setPreferredSize(new Dimension(325, 25));
         jtf_kw.setHorizontalAlignment(SwingConstants.RIGHT);
         jtf_kw.setBorder(new LineBorder(Color.BLACK, 1));
         field_kw.add(jtf_kw);
 
         // Buttons Field
         field_btn = new JPanel();
-        field_btn.setPreferredSize(new Dimension(550, 60));
+        field_btn.setPreferredSize(new Dimension(550, 30));
         field_btn.setLayout(flowLayout);
 
         btn_ranking = new JButton("Ranking");
-        btn_ranking.setPreferredSize(new Dimension(160,40));
+        btn_ranking.setPreferredSize(new Dimension(160,25));
         field_btn.add(btn_ranking);
 
         btn_search = new JButton("Search");
-        btn_search.setPreferredSize(new Dimension(160,40));
+        btn_search.setPreferredSize(new Dimension(160,25));
         field_btn.add(btn_search);
 
         btn_wonteams = new JButton("Won teams");
-        btn_wonteams.setPreferredSize(new Dimension(160,40));
+        btn_wonteams.setPreferredSize(new Dimension(160,25));
         field_btn.add(btn_wonteams);
 
         // Text Area Field
@@ -101,7 +103,7 @@ public class QLKQ extends JFrame {
         this.add(field_btn);
         this.add(field_txtArea);
 
-        setSize(550, 400);
+        setSize(550, 350);
         setVisible(true);
     }
 
@@ -141,8 +143,7 @@ public class QLKQ extends JFrame {
                         txtArea.append(line + "\n");
                     }
 
-                    if (!connection.isClosed())
-                        connection.close();
+                    dm.closeConnection();
 
                     br.close();
                     fr.close();
@@ -172,6 +173,7 @@ public class QLKQ extends JFrame {
                     String querysl = "select teamname, uniname,count(distinct(problemid)) as count, sum(min_time) as time from\n" +
                             "(select teamname, uniname, problemid, min(time) as min_time from icpc where result = 'AC' group by teamname, uniname, problemid) as T \n" +
                             "group by teamname,uniname order by count desc, time";
+
                     ResultSet result = statement.executeQuery(querysl);
 
                     int rank = 1, problemsolved = -1, time = -1;
@@ -191,10 +193,13 @@ public class QLKQ extends JFrame {
 
                         rank += 1;
                     }
+
+                    dm.closeConnection();
                 }
 
                 catch (Exception ex) {
-
+                    System.out.println("Action failed!");
+                    ex.printStackTrace();
                 }
              }
          });
@@ -203,11 +208,49 @@ public class QLKQ extends JFrame {
              @Override
              public void actionPerformed(ActionEvent e) {
                  try {
+                     DatabaseManager dm = new DatabaseManager();
+                     Connection connection = dm.getConnection();
+                     Statement statement = connection.createStatement();
 
+                     txtArea.setText("");
+
+                     String querysl = "select teamname, uniname,count(distinct(problemid)) as count, sum(min_time) as time from\n" +
+                             "(select teamname, uniname, problemid, min(time) as min_time from icpc where result = 'AC' group by teamname, uniname, problemid) as T \n" +
+                             "group by teamname,uniname order by count desc, time";
+
+                     ResultSet result = statement.executeQuery(querysl);
+
+                     String searchTxt = jtf_kw.getText();
+
+                     int rank = 1, problemsolved = -1, time = -1;
+                     while(result.next()) {
+                         String teamname = result.getString("teamname");
+                         String uniname = result.getString("uniname");
+
+                         if (!uniname.contains(searchTxt)) {
+                             rank += 1;
+                             continue;
+                         }
+
+                         if (result.getInt("count") == problemsolved && result.getInt("time") == time) {
+                             txtArea.append((rank-1) + "," + teamname + "," + uniname + "," + problemsolved + "," + time + "\n");
+                         }
+
+                         else {
+                             problemsolved = result.getInt("count");
+                             time = result.getInt("time");
+                             txtArea.append(rank + "," + teamname + "," + uniname + "," + problemsolved + "," + time + "\n");
+                         }
+
+                         rank += 1;
+                     }
+
+                     dm.closeConnection();
                  }
 
                  catch (Exception ex) {
-
+                     System.out.println("Action failed!");
+                     ex.printStackTrace();
                  }
              }
          });
@@ -215,7 +258,52 @@ public class QLKQ extends JFrame {
          btn_wonteams.addActionListener(new ActionListener() {
              @Override
              public void actionPerformed(ActionEvent e) {
+                 try {
+                     DatabaseManager dm = new DatabaseManager();
+                     Connection connection = dm.getConnection();
+                     Statement statement = connection.createStatement();
 
+                     txtArea.setText("");
+
+                     String querysl = "select teamname, uniname,count(distinct(problemid)) as count, sum(min_time) as time from\n" +
+                             "(select teamname, uniname, problemid, min(time) as min_time from icpc where result = 'AC' group by teamname, uniname, problemid) as T \n" +
+                             "group by teamname,uniname order by count desc, time";
+
+                     ResultSet result = statement.executeQuery(querysl);
+
+                     int rank = 1, problemsolved = -1, time = -1;
+                     Map<String, Boolean> mp = new HashMap<String, Boolean>();
+                     while(result.next()) {
+                         String teamname = result.getString("teamname");
+                         String uniname = result.getString("uniname");
+
+                        if (mp.get(uniname) != null) {
+                            rank += 1;
+                            continue;
+                        }
+
+                        mp.put(uniname,true);
+
+                         if (result.getInt("count") == problemsolved && result.getInt("time") == time) {
+                             txtArea.append((rank-1) + "," + teamname + "," + uniname + "," + problemsolved + "," + time + "\n");
+                         }
+
+                         else {
+                             problemsolved = result.getInt("count");
+                             time = result.getInt("time");
+                             txtArea.append(rank + "," + teamname + "," + uniname + "," + problemsolved + "," + time + "\n");
+                         }
+
+                         rank += 1;
+                     }
+
+                     dm.closeConnection();
+                 }
+
+                 catch (Exception ex) {
+                     System.out.println("Action failed!");
+                     ex.printStackTrace();
+                 }
              }
          });
     }
